@@ -1,33 +1,41 @@
 package org.example.server;
 
 import java.net.*;
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.example.annotations.AppConfig;
+
 import java.io.*;
 
 public class HttpServer {
-    public static void main(String[] args) throws Exception {
-        ServerSocket serverSocket = null;
-        FileReader fileReader = null;        
-        try {
-            serverSocket = new ServerSocket(35000);
-            fileReader = new FileReader();
-            
-        } catch (IOException e) {
-            System.err.println("No pude escuchar en el puerto: 35000.");
-            System.exit(1);
-        }
 
-        boolean running = true;
-        while (running) {
-            Socket clientSocket = null;
-            try {
-                System.out.println("Listo para recibir ...");
-                clientSocket = serverSocket.accept();
-                fileReader.handleRequest(serverSocket, clientSocket);
+        private static final ExecutorService threadPool = Executors.newFixedThreadPool(10);
+            public static void main(String[] args) throws Exception {
+                ServerSocket serverSocket = null;
+                AppConfig.initialize(); 
 
-            } catch (IOException e) {
-                System.err.println("Accept failed.");
-                System.exit(1);
-            } 
+                try {
+                    serverSocket = new ServerSocket(35000);
+                    
+                } catch (IOException e) {
+                    System.err.println("No pude escuchar en el puerto: 35000.");
+                    System.exit(1);
+                }
+        
+                boolean running = true;
+                while (running) {
+                    Socket clientSocket = null;
+                    try {
+                        System.out.println("Listo para recibir ...");
+                        clientSocket = serverSocket.accept();
+                        threadPool.execute(new FileReader(clientSocket));
+
+                    } catch (IOException e) {
+                        System.err.println("Accept failed.");
+                        System.exit(1);
+                    } 
         }
         serverSocket.close();
     }

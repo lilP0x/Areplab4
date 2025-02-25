@@ -1,111 +1,74 @@
 package org.example.server;
 
 import java.io.*;
-import java.lang.annotation.Annotation;
+import java.net.*;
+import java.net.URI;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URI;
 import java.util.*;
 
+import org.example.annotations.AppConfig;
 import org.example.annotations.GetMapping;
 import org.example.annotations.RequestParam;
 import org.example.annotations.RestController;
 
-public class FileReader {
+public class FileReader implements Runnable {
+    private final Socket clientSocket;
+    private final Map<String, Method> routeMappings;
+    private final Map<String, Object> controllers;
 
-    private final Map<String, Method> routeMappings = new HashMap<>();
-    private final Map<String, Object> controllers = new HashMap<>();
-
-    public FileReader() {
-        loadComponents("org.example.controller");
-        loadComponents("org.example.annotations");
+    public FileReader(Socket clientSocket) {
+        this.clientSocket = clientSocket;
+        this.routeMappings = AppConfig.getRouteMappings();
+        this.controllers = AppConfig.getControllers(); 
     }
 
-    private void loadComponents(String packagePath) {
-        try {
-            List<Class<?>> classes = findAllClasses(packagePath);
-            for (Class<?> c : classes) {
-                if (c.isAnnotationPresent(RestController.class)) {
-                    Object instance = c.getDeclaredConstructor().newInstance();
-                    controllers.put(c.getName(), instance);
-                    for (Method method : c.getDeclaredMethods()) {
-                        if (method.isAnnotationPresent(GetMapping.class)) {
-                            String route = method.getAnnotation(GetMapping.class).value();
-                            routeMappings.put(route, method);
-                            System.out.println("Ruta registrada: " + route);
-                        }
-                    }
+    @Override
+    public void run() {
+        try (
+            OutputStream out = clientSocket.getOutputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
+        ) {
+            String inputLine;
+            boolean isFirstLine = true;
+            String file = "";
+            String method = "";
+
+            while ((inputLine = in.readLine()) != null) {
+                if (isFirstLine) {
+                    String[] requestParts = inputLine.split(" ");
+                    method = requestParts[0];
+                    file = requestParts[1];
+                    isFirstLine = false;
                 }
+                if (!in.ready()) break;
+            }
+
+            URI requestFile = new URI(file);
+            String filePath = requestFile.getPath().replaceAll("/$", ""); 
+
+            if (method.equals("GET") && filePath.startsWith("/app")) {
+                handleGetRequest(file, out);
+            } else {
+                serveFile(filePath, out);
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    private List<Class<?>> findAllClasses(String packageName) throws IOException, ClassNotFoundException {
-        String path = packageName.replace('.', '/');
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        var resource = classLoader.getResource(path);
-
-        if (resource == null) {
-            throw new IOException("No se encontró el paquete: " + packageName);
-        }
-
-        File directory = new File(resource.getFile());
-        List<Class<?>> classes = new ArrayList<>();
-
-        if (directory.exists()) {
-            for (String file : directory.list()) {
-                if (file.endsWith(".class")) {
-                    String className = packageName + '.' + file.substring(0, file.length() - 6);
-                    classes.add(Class.forName(className));
-                }
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                System.err.println("Error al cerrar el socket del cliente.");
             }
         }
-        return classes;
-    }
-
-    public void handleRequest(ServerSocket socket, Socket clientSocket) throws Exception {
-        OutputStream out = clientSocket.getOutputStream();
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-        String inputLine;
-        boolean isFirstLine = true;
-        String file = "";
-        String method = "";
-
-        while ((inputLine = in.readLine()) != null) {
-            if (isFirstLine) {
-                String[] requestParts = inputLine.split(" ");
-                method = requestParts[0];
-                file = requestParts[1];
-                isFirstLine = false;
-            }
-
-            if (!in.ready()) {
-                break;
-            }
-        }
-
-        URI requestFile = new URI(file);
-        String filePath = requestFile.getPath().replaceAll("/$", ""); 
-        if (method.equals("GET") && filePath.startsWith("/app")) {
-            handleGetRequest(file, out);
-        } else {
-            serveFile(filePath, out);
-        }
-
-        out.close();
-        in.close();
-        clientSocket.close();
     }
 
     private void handleGetRequest(String path, OutputStream out) throws Exception {
+        System.out.println(routeMappings.values());
+        System.out.println(routeMappings.keySet());
         System.out.println("Solicitud recibida en: " + path);
 
-        String route = path.split("\\?")[0].replaceAll("/$", ""); // 🔥 Corrige la clave
+        String route = path.split("\\?")[0].replaceAll("/$", "");
         Method handlerMethod = routeMappings.get(route);
 
         if (handlerMethod != null) {
@@ -177,10 +140,4 @@ public class FileReader {
         output.write(fileBytes);
         output.flush();
     }
-
-
-    public Map<String, Method> getRouteMappings() {
-        return routeMappings;
-    }
-    
 }

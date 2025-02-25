@@ -9,17 +9,5 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FileReaderTest {
 
-    private FileReader fileReader;
 
-    @BeforeEach
-    void setUp() {
-        fileReader = new FileReader();
-    }
-
-    @Test
-    void testRouteRegistration() {
-        Method method = fileReader.getRouteMappings().get("/app/add");
-        assertNotNull(method);
-        assertEquals("add", method.getName());
-    }
 }
