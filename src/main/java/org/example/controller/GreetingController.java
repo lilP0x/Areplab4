@@ -1,6 +1,5 @@
 package org.example.controller;
 
-import javax.xml.namespace.QName;
 import org.example.annotations.GetMapping;
 import org.example.annotations.RequestParam;
 import org.example.annotations.RestController;
