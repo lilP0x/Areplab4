@@ -73,7 +73,7 @@ http://localhost:35000/app/sub?value=10&value2=4
 ```
 ## Diagrama de clases 
 
-![alt text](src/main/resources/readmeImages/image.png)
+![alt text](src/main/resources/readmeImages/diagrama_Clases.png)
 
 # **Descripción del Diagrama de Clases**
 
@@ -148,9 +148,152 @@ Este diseño sigue el patrón **"Inversión de Control"**, ya que la detección 
 
 ---
 
-### Ahora veremos el despliegue en la nube AWS
+## Adaptacion para la concurrencia
+
+Como requerimiento funcional se requiere que el servidor reciba peticiones de manera concurrente. Esto lo lograremos mediante la creacion de hilos hasta un maximo de 10. 
+
+![alt text](src/main/resources/readmeImages/concurrencia_codigo.png)
+
+Aqui se ve como existe un pool de hilos de un maximo de 10.
+
+## Apagado elegante. 
+
+Como siguiente requerimiento funcional se pidio que el servidor se apagara de una manera elegante y para esto se implemento el siguiente codigo.
+
+![alt text](src/main/resources/readmeImages/apagado_elegante.png)
+
+Esto crea un timer que si el servidor no recibe una peticion en un rango de 30 segundos entonces crea un hilo que apaga el servidor. Si llega una peticion durante ese tiempo el timer es reiniciado.
+
+## Combios adicionales
+
+Como cambio adicional para mantener los mas altos estandares de calidad y extensibilidad del codigo fue implementada una nueva clase para que sea responsable de cargar las anotaciones. Esto aumenta la escalabilidad del servidor y delega funcionalidades para disminuir el acoplamiento. Esta clase es  `AppConfig`. 
+
+Esta clase cargara todas las anotaciones por si misma recien el servidor es ejecutado. Y el servidor accedera de manera estatica a los hashmap que contienen los endpoints para asi dar respuesta a las peticiones.
+
+![alt text](src/main/resources/readmeImages/appconfig.png)
+
+## Ahora veremos el despliegue en la nube AWS
+
+Primero fue necesario la creacion de las imagenes docker por medio del uso del dockerfile y dockercompose. 
+
+### Docker
+
+Es asi como crearemos el docker file siguiendo el ejemplo propuesto.
+
+![alt text](src/main/resources/readmeImages/dockerfile.png)
+
+Ahora crearemos la imagen docker. Para esto tendremos que iniciar docker desktop. y posteriormente tendremos que ejecutar el siguiente comando:
+
+```sh
+docker build --tag dockersparkprimer .
+```
+
+Ahora tendremos que poner a correr las imagenes y asignarles un puerto por el que escucharan y por el que lo mapearan para el servidor interno usando el siguiente comando:
+
+```sh
+docker run -d -p 34000:6000 --name firstdockercontainer dockersparkprimer
+```
+
+Podremos revisarlas usando el siguiente comando:
 
 
+```sh
+docker images
+```
+
+y ver en que estado estan con el siguiente comando:
+
+```sh
+docker ps
+```
+
+Deberia ver algo asi:
+![alt text](src/main/resources/readmeImages/docker_ps.png)
+
+Despues lo probaremos y deberia aparecer algo asi:
+
+### Test 1
+![alt text](src/main/resources/readmeImages/docker_test1.png)
+
+### Test 2
+
+![alt text](src/main/resources/readmeImages/docker_test2.png)
+
+### Test 3
+
+![alt text](src/main/resources/readmeImages/docker_test3.png)
+
+
+### Docker Compose
+
+Ahora por medio del docker compose generaremos una una configuración docker, por ejemplo un container y una instancia a de mongo en otro container. Cree en la raíz de su directorio el archivo docker-compose.yml con le siguiente contenido:
+
+![alt text](src/main/resources/readmeImages/docker_compose.png)
+
+Ahora para ejecutarlo debera colocar el siguiente comando.
+
+```sh
+docker-compose up -d
+```
+
+nuevamente para verificar ejecute
+
+
+```sh
+docker ps
+```
+
+Deberia ver algo asi:
+
+![alt text](src/main/resources/readmeImages/docker_compose_ps.png)
+
+Ahora estamos listos para poder desplegar en AWS.
+
+Para eso primero tendremos que subir las imagenes docker a un repositorio en dockerhub. Para esto usare el siguiente comando (Despues de haberse logeado):
+
+```sh
+docker push juanito152612/labarep:latest
+```
+Deberia ver algo asi en su repositorio.
+
+![alt text](src/main/resources/readmeImages/docker_repo.png)
+
+Ahora por medio de una maquina virtual de AWS iniciaremos mediante SSH. Al inciar veremos algo asi:
+
+![alt text](src/main/resources/readmeImages/pagina_inicio_maquina.png)
+
+Ahora tendremos que actulizar el sistema operativo y descargar docker respectivamente. Colocado los siguientes comandos:
+
+```sh
+sudo yum update -
+```
+
+```sh
+sudo yum install docker
+```
+
+Ahora tendremos que iniciar el servidor docker:
+
+```sh
+sudo service docker start
+```
+Ahora tendremos que configurr el usuario con el siguiente comando.
+
+```sh
+sudo usermod -a -G docker ec2-user
+```
+
+Posteriormente tendremos que salir de la maquina y volver a entrar para que los grupos de usuarios tenga efecto.
+
+Por ultimo tendremos que crear una instancia de la imagen docker alojada en dockerhub usando el siguiente comando.
+```sh
+docker run -d -p 42000:35000 --name firstdockerimageaws juanito152612/labarep
+```
+Esto jalara la imagen docker alojada en dockerhub y la pondra a correr por los puertos indicados.
+
+![alt text](src/main/resources/readmeImages/docker_run.png)
+
+Por ultimo tendremos que abrir los puertos de seguridad en la maquina virtual AWS. Y ahora probaremos usando la url que se nos entrego al crear la maquina virtual.
 
 
 
