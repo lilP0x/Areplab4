@@ -1,7 +1,7 @@
 # Proyecto: Servidor Web en Java con Framework 
 
 ## Descripción
-Este proyecto consiste en la implementación de un servidor web simple en Java que soporta la entrega de páginas HTML e imágenes PNG, javascript. Además, proporciona un mini framework que permite la construcción de aplicaciones web a partir de POJOs utilizando anotaciones personalizadas similares a Spring Boot.
+Este proyecto consiste en la implementación de un servidor web simple en Java que soporta la entrega de páginas HTML e imágenes PNG, javascript. Además, proporciona un mini framework que permite la construcción de aplicaciones web a partir de POJOs utilizando anotaciones personalizadas similares a Spring Boot. Ademas permite solicitudes concurrentes y se encuentra desplegado en la nube aws
 
 El servidor soporta peticiones GET y permite definir controladores con rutas personalizadas mediante las anotaciones `@RestController`, `@GetMapping` y `@RequestParam`.
 
@@ -11,6 +11,7 @@ El servidor soporta peticiones GET y permite definir controladores con rutas per
 - Soporte para `@RestController` y `@GetMapping` para definir controladores.
 - Soporte para `@RequestParam` para recibir parámetros en las peticiones GET.
 - Descubrimiento automático de controladores en el paquete `org.example.controller`.
+- Capacidad para manejar solicitudes concurrentes.
 
 ## Requisitos
 Para ejecutar este proyecto, asegúrate de tener instalados los siguientes componentes:
@@ -29,7 +30,7 @@ Para ejecutar este proyecto, asegúrate de tener instalados los siguientes compo
 ## Instalación y Ejecución
 ### 1. Clonar el Repositorio
 ```sh
-$ git clone https://github.com/lilP0x/Areplab3
+$ git clone https://github.com/lilP0x/Areplab4
 ```
 
 ### 2. Compilar el Proyecto
@@ -71,12 +72,10 @@ http://localhost:35000/app/sub?value=10&value2=4
 6
 ```
 
-## Explicación de la Solución
-1. **Anotaciones Personalizadas**: Se definen `@RestController`, `@GetMapping` y `@RequestParam` para identificar clases y métodos que manejarán peticiones HTTP.
-2. **Exploración de Clases**: `FileReader` busca clases anotadas con `@RestController` y registra los métodos `@GetMapping`.
-3. **Servidor HTTP**: `HttpServer` maneja las conexiones y delega las peticiones al `FileReader`, que resuelve la ruta y ejecuta el método correspondiente.
-4. **Inyección de Dependencias Básica**: Se instancian los controladores y se invocan dinámicamente sus métodos, pasando los parámetros adecuados.
 
----
+### Ahora veremos el despliegue en la nube AWS
+
+
+
 
 

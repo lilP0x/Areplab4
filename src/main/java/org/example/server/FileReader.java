@@ -2,17 +2,14 @@ package org.example.server;
 
 import java.io.*;
 import java.net.*;
-import java.net.URI;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.nio.file.*;
+import java.lang.reflect.*;
 import java.util.*;
 
-import org.example.annotations.AppConfig;
-import org.example.annotations.GetMapping;
-import org.example.annotations.RequestParam;
-import org.example.annotations.RestController;
+import org.example.annotations.*;
 
 public class FileReader implements Runnable {
+    private static String staticFolder = "src/main/resources";
     private final Socket clientSocket;
     private final Map<String, Method> routeMappings;
     private final Map<String, Object> controllers;
@@ -20,7 +17,7 @@ public class FileReader implements Runnable {
     public FileReader(Socket clientSocket) {
         this.clientSocket = clientSocket;
         this.routeMappings = AppConfig.getRouteMappings();
-        this.controllers = AppConfig.getControllers(); 
+        this.controllers = AppConfig.getControllers();
     }
 
     @Override
@@ -31,26 +28,23 @@ public class FileReader implements Runnable {
         ) {
             String inputLine;
             boolean isFirstLine = true;
-            String file = "";
+            String filePath = "";
             String method = "";
 
             while ((inputLine = in.readLine()) != null) {
                 if (isFirstLine) {
                     String[] requestParts = inputLine.split(" ");
                     method = requestParts[0];
-                    file = requestParts[1];
+                    filePath = requestParts[1];
                     isFirstLine = false;
                 }
                 if (!in.ready()) break;
             }
 
-            URI requestFile = new URI(file);
-            String filePath = requestFile.getPath().replaceAll("/$", ""); 
-
             if (method.equals("GET") && filePath.startsWith("/app")) {
-                handleGetRequest(file, out);
+                handleGetRequest(filePath, out);
             } else {
-                serveFile(filePath, out);
+                serveFile(filePath.substring(1), out);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,10 +58,6 @@ public class FileReader implements Runnable {
     }
 
     private void handleGetRequest(String path, OutputStream out) throws Exception {
-        System.out.println(routeMappings.values());
-        System.out.println(routeMappings.keySet());
-        System.out.println("Solicitud recibida en: " + path);
-
         String route = path.split("\\?")[0].replaceAll("/$", "");
         Method handlerMethod = routeMappings.get(route);
 
@@ -113,24 +103,21 @@ public class FileReader implements Runnable {
             writer.println();
             writer.println(result);
         } else {
-            PrintWriter writer = new PrintWriter(out, true);
-            writer.println("HTTP/1.1 404 Not Found");
-            writer.println("Content-Type: text/plain");
-            writer.println();
-            writer.println("Error 404: Endpoint no encontrado");
+            serveFile("400badrequest.html", out);
         }
     }
 
     private static void serveFile(String filePath, OutputStream output) throws IOException {
-        InputStream fileStream = FileReader.class.getClassLoader().getResourceAsStream(filePath);
-        boolean isError = (fileStream == null);
+        Path file = Paths.get(staticFolder, filePath);
+        boolean isError = false;
 
-        if (isError) {
-            fileStream = FileReader.class.getClassLoader().getResourceAsStream("400badrequest.html");
+        if (!Files.exists(file) || Files.isDirectory(file)) {
+            file = Paths.get(staticFolder, "400badrequest.html");
+            isError = true;
         }
 
-        byte[] fileBytes = fileStream.readAllBytes();
-        String contentType = "text/plain";
+        byte[] fileBytes = Files.readAllBytes(file);
+        String contentType = getContentType(filePath);
 
         PrintWriter writer = new PrintWriter(output, true);
         writer.println(isError ? "HTTP/1.1 400 Bad Request" : "HTTP/1.1 200 OK");
@@ -139,5 +126,19 @@ public class FileReader implements Runnable {
         writer.println();
         output.write(fileBytes);
         output.flush();
+    }
+
+    private static String getContentType(String filePath) {
+        if (filePath.endsWith(".html")) return "text/html";
+        if (filePath.endsWith(".png")) return "image/png";
+        if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) return "image/jpeg";
+        if (filePath.endsWith(".gif")) return "image/gif";
+        if (filePath.endsWith(".css")) return "text/css";
+        if (filePath.endsWith(".js")) return "application/javascript";
+        return "application/octet-stream";
+    }
+
+    public static void staticfiles(String path) {
+        staticFolder = path;
     }
 }
