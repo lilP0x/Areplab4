@@ -224,6 +224,16 @@ Despues lo probaremos y deberia aparecer algo asi:
 ![alt text](src/main/resources/readmeImages/docker_test3.png)
 
 
+Ahora usando JUnit usaremos test automatizados.
+
+![alt text](src/main/resources/readmeImages/test_automatico.png)
+
+Clase test
+
+![alt text](src/main/resources/readmeImages/codigo_test.png)
+
+
+![alt text](src/main/resources/readmeImages/codigo_test2.png)
 ### Docker Compose
 
 Ahora por medio del docker compose generaremos una una configuración docker, por ejemplo un container y una instancia a de mongo en otro container. Cree en la raíz de su directorio el archivo docker-compose.yml con le siguiente contenido:
@@ -294,6 +304,5 @@ Esto jalara la imagen docker alojada en dockerhub y la pondra a correr por los p
 ![alt text](src/main/resources/readmeImages/docker_run.png)
 
 Por ultimo tendremos que abrir los puertos de seguridad en la maquina virtual AWS. Y ahora probaremos usando la url que se nos entrego al crear la maquina virtual.
-
 
 

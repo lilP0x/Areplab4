@@ -9,7 +9,7 @@ import java.util.*;
 import org.example.annotations.*;
 
 public class FileReader implements Runnable {
-    private static String staticFolder = "src/main/resources";
+    private static String staticFolder = "classes";
     private final Socket clientSocket;
     private final Map<String, Method> routeMappings;
     private final Map<String, Object> controllers;
